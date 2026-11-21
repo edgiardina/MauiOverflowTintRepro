@@ -1,0 +1,26 @@
+﻿<ContentPage
+    x:Class="MauiOverflowTintRepro.MainPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Title="Toolbar">
+
+    <!--
+        One primary item with a color-less FontImageSource, and two Secondary items that make the
+        "..." overflow button. Expected: the primary icon and the "..." button have the same tint.
+    -->
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Filter">
+            <ToolbarItem.IconImageSource>
+                <FontImageSource Glyph="&#x2261;" Size="22" />
+            </ToolbarItem.IconImageSource>
+        </ToolbarItem>
+        <ToolbarItem Text="Info" Order="Secondary" />
+        <ToolbarItem Text="Share" Order="Secondary" />
+    </ContentPage.ToolbarItems>
+
+    <VerticalStackLayout Padding="30" Spacing="12">
+        <Label Text="Shell.ForegroundColor is set by a TabBar style. Compare the tint of the primary icon with the tint of the '...' overflow button." />
+        <Label x:Name="VersionLabel" FontAttributes="Bold" />
+    </VerticalStackLayout>
+
+</ContentPage>

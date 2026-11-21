@@ -1,0 +1,90 @@
+name: iOS toolbar screenshots
+
+# Builds the repro with each MAUI version (and once with the app-side workaround) and screenshots
+# the main page on an iOS 27.2 simulator in dark mode.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    # Docs, screenshots and workflow edits don't change the app. Run it by hand after a workflow change.
+    paths-ignore:
+      - '**.md'
+      - 'screenshots/**'
+      - '.github/**'
+
+jobs:
+  screenshots:
+    runs-on: xcode-27
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: maui-10.0.110
+            dotnet: '10'
+            sdk: '10.0.404'
+            workload: '10.0.404'
+            maui: '10.0.110'
+            workaround: 'false'
+          - name: maui-10.0.130
+            dotnet: '10'
+            sdk: '10.0.404'
+            workload: '10.0.404'
+            maui: '10.0.130'
+            workaround: 'false'
+          - name: maui-11.0.10
+            dotnet: '11'
+            sdk: '11.0.100'
+            workload: '11.0.100.1'
+            maui: '11.0.10'
+            workaround: 'false'
+          - name: maui-11.0.10-workaround
+            dotnet: '11'
+            sdk: '11.0.100'
+            workload: '11.0.100.1'
+            maui: '11.0.10'
+            workaround: 'true'
+    name: ${{ matrix.name }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode 27.2
+        run: sudo xcode-select -s /Applications/Xcode_27.2.app
+
+      - uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
+        with:
+          dotnet-version: ${{ matrix.sdk }}
+
+      - name: Pin the SDK
+        run: echo '{"sdk":{"version":"${{ matrix.sdk }}","rollForward":"latestPatch"}}' > global.json
+
+      - name: Install workloads
+        run: dotnet workload install maui-ios --version ${{ matrix.workload }}
+
+      - name: Build
+        run: >
+          dotnet build MauiOverflowTintRepro.csproj -c Debug
+          -f net${{ matrix.dotnet }}.0-ios -r iossimulator-arm64
+          -p:ReproDotNet=${{ matrix.dotnet }} -p:MauiVersion=${{ matrix.maui }}
+          -p:ApplyWorkaround=${{ matrix.workaround }}
+
+      - name: Screenshot on iOS 27.2
+        run: |
+          set -euo pipefail
+          APP=$(ls -d bin/Debug/net${{ matrix.dotnet }}.0-ios/iossimulator-arm64/*.app | head -1)
+          mkdir -p shots
+          UDID=$(xcrun simctl create repro com.apple.CoreSimulator.SimDeviceType.iPhone-17 com.apple.CoreSimulator.SimRuntime.iOS-27-2)
+          xcrun simctl boot "$UDID"
+          xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl ui "$UDID" appearance dark
+          xcrun simctl install "$UDID" "$APP"
+          xcrun simctl launch "$UDID" com.companyname.mauioverflowtintrepro
+          sleep 20
+          xcrun simctl io "$UDID" screenshot "shots/${{ matrix.name }}-ios27-2.png"
+          # The simulator is sometimes already shut down by now (SimError 405); that's fine.
+          xcrun simctl shutdown "$UDID" || true
+          xcrun simctl delete "$UDID" || true
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.name }}
+          path: shots/*.png

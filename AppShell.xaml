@@ -1,0 +1,26 @@
+<Shell
+    x:Class="MauiOverflowTintRepro.AppShell"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:local="clr-namespace:MauiOverflowTintRepro"
+    Title="MauiOverflowTintRepro">
+
+    <!-- Shell.ForegroundColor comes from a TabBar style, not from the Shell or the page. -->
+    <Shell.Resources>
+        <Style TargetType="TabBar">
+            <Setter Property="Shell.ForegroundColor" Value="#2F6FED" />
+        </Style>
+    </Shell.Resources>
+
+    <TabBar>
+        <ShellContent
+            Title="Home"
+            ContentTemplate="{DataTemplate local:MainPage}"
+            Route="MainPage" />
+        <ShellContent
+            Title="Other"
+            ContentTemplate="{DataTemplate local:MainPage}"
+            Route="OtherPage" />
+    </TabBar>
+
+</Shell>
